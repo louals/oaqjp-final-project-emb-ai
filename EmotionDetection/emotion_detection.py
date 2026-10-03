@@ -3,9 +3,8 @@ import json
 
 def emotion_detector(text_to_analyze):
     """
-    Sends a text payload to the Watson Embedded NLP Emotion Predict service,
-    parses the response, and returns a formatted dictionary containing individual
-    emotion scores and the dominant emotion.
+    Sends a text payload to the Watson Embedded NLP Emotion Predict service.
+    Handles status_code 400 (e.g. blank input) by returning a dictionary with None values.
     """
     url = 'https://sn-watson-emotion.labs.skills.network/v1/watson.runtime.nlp.v1/NlpService/EmotionPredict'
     headers = {"grpc-metadata-mm-model-id": "emotion_aggregated-workflow_lang_en_stock"}
@@ -13,10 +12,19 @@ def emotion_detector(text_to_analyze):
     
     response = requests.post(url, json=myobj, headers=headers)
     
-    # Convert response text into a Python dictionary
-    formatted_response = json.loads(response.text)
+    # Error handling for status_code 400 (e.g. blank input)
+    if response.status_code == 400:
+        return {
+            'anger': None,
+            'disgust': None,
+            'fear': None,
+            'joy': None,
+            'sadness': None,
+            'dominant_emotion': None
+        }
     
-    # Extract the emotion dictionary
+    # Parse valid response
+    formatted_response = json.loads(response.text)
     emotions = formatted_response['emotionPredictions'][0]['emotion']
     
     anger_score = emotions['anger']
@@ -24,11 +32,8 @@ def emotion_detector(text_to_analyze):
     fear_score = emotions['fear']
     joy_score = emotions['joy']
     sadness_score = emotions['sadness']
-    
-    # Logic to find the emotion with the highest score
     dominant_emotion = max(emotions, key=emotions.get)
     
-    # Return formatted output
     return {
         'anger': anger_score,
         'disgust': disgust_score,
